@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Space Shooter</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  
+  <!-- Sound Effects -->
+  <audio id="shootSound" preload="auto">
+    <source src="sounds/shoot.wav" type="audio/wav">
+    <source src="sounds/shoot.mp3" type="audio/mpeg">
+  </audio>
+  
+  <audio id="explosionSound" preload="auto">
+    <source src="sounds/explosion.wav" type="audio/wav">
+    <source src="sounds/explosion.mp3" type="audio/mpeg">
+  </audio>
+  
+  <audio id="gameOverSound" preload="auto">
+    <source src="sounds/gameover.wav" type="audio/wav">
+    <source src="sounds/gameover.mp3" type="audio/mpeg">
+  </audio>
+  
+  <audio id="buttonSound" preload="auto">
+    <source src="sounds/button.wav" type="audio/wav">
+    <source src="sounds/button.mp3" type="audio/mpeg">
+  </audio>
+  
+  <audio id="backgroundMusic" loop preload="auto">
+    <source src="sounds/background.wav" type="audio/wav">
+    <source src="sounds/background.mp3" type="audio/mpeg">
+  </audio>
+  
+  <script src="game.js"></script>
+</body>
+</html>
