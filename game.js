@@ -77,6 +77,24 @@ for (let i = 0; i < numStars; i++) {
   });
 }
 
+// Function to shoot a bullet
+function shootBullet() {
+  if (gameOver) return;
+
+  const tipX = rocket.x + Math.sin(rocket.angle) * rocket.size;
+  const tipY = rocket.y - Math.cos(rocket.angle) * rocket.size;
+
+  bullets.push({
+    x: tipX,
+    y: tipY,
+    vx: Math.sin(rocket.angle) * 8,
+    vy: -Math.cos(rocket.angle) * 8
+  });
+
+  playSound(shootSound);
+}
+
+
 // Rocket
 const rocket = {
   x: canvas.width / 2,
@@ -99,9 +117,15 @@ const asteroidSpawnRate = 120; // frames
 
 // Input
 const keys = {};
+let spaceShootTimer = 0;
+const SPACE_FIRE_DELAY = 500; // ms
 window.addEventListener("keydown", e => {
   ensureAudioInit(); // Initialize audio on first interaction
   keys[e.code] = true;
+
+  if (e.code === "Space") {
+    e.preventDefault(); // stop page scroll
+  }
 });
 window.addEventListener("keyup", e => keys[e.code] = false);
 
@@ -112,7 +136,7 @@ window.addEventListener("mousemove", e => {
   mouseY = e.clientY - rect.top;
 });
 
-let canShoot = true;
+
 window.addEventListener("mousedown", e => {
   e.preventDefault();
   ensureAudioInit(); // Initialize audio on first interaction
@@ -143,20 +167,8 @@ window.addEventListener("mousedown", e => {
         frameCount = 0;
       }, 150);
     }
-  } else if (e.button === 0 && canShoot) {
-    // Calculate tip position
-    const tipX = rocket.x + Math.sin(rocket.angle) * rocket.size;
-    const tipY = rocket.y - Math.cos(rocket.angle) * rocket.size;
-    
-    bullets.push({
-      x: tipX,
-      y: tipY,
-      vx: Math.sin(rocket.angle) * 8,
-      vy: -Math.cos(rocket.angle) * 8
-    });
-    playSound(shootSound); // Shooting sound
-    canShoot = false;
-    setTimeout(() => canShoot = true, 150);
+  } else if (e.button === 0) {
+    shootBullet();
   }
 });
 
@@ -488,6 +500,17 @@ function gameLoop() {
   drawBackground();
 
   if (!gameOver) {
+    // Continuous fire when holding Space
+  if (keys["Space"]) {
+    spaceShootTimer += 16.6; // approx frame time
+
+    if (spaceShootTimer >= SPACE_FIRE_DELAY) {
+      shootBullet();
+      spaceShootTimer = 0;
+    }
+  } else {
+    spaceShootTimer = SPACE_FIRE_DELAY; // instant fire when pressed again
+  }
     frameCount++;
     updateRocket();
     updateBullets();
