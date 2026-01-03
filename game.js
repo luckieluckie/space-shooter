@@ -21,7 +21,7 @@ function initAudio() {
     explosionSound.volume = 0.4;
     gameOverSound.volume = 0.5;
     buttonSound.volume = 0.3;
-    backgroundMusic.volume = 0.1;
+    backgroundMusic.volume = 0.2;
     
     isAudioEnabled = true;
     startBackgroundMusic();
@@ -144,11 +144,15 @@ window.addEventListener("mousedown", e => {
       }, 150);
     }
   } else if (e.button === 0 && canShoot) {
+    // Calculate tip position
+    const tipX = rocket.x + Math.sin(rocket.angle) * rocket.size;
+    const tipY = rocket.y - Math.cos(rocket.angle) * rocket.size;
+    
     bullets.push({
-      x: rocket.x,
-      y: rocket.y,
-      vx: Math.cos(rocket.angle) * 8,
-      vy: Math.sin(rocket.angle) * 8
+      x: tipX,
+      y: tipY,
+      vx: Math.sin(rocket.angle) * 8,
+      vy: -Math.cos(rocket.angle) * 8
     });
     playSound(shootSound); // Shooting sound
     canShoot = false;
@@ -202,7 +206,7 @@ function drawBackground() {
 function updateRocket() {
   // Rotation
   if (mouseX !== undefined && mouseY !== undefined) {
-    rocket.angle = Math.atan2(mouseY - rocket.y, mouseX - rocket.x);
+    rocket.angle = Math.atan2(mouseY - rocket.y, mouseX - rocket.x) + Math.PI / 2;
   }
 
   // Movement
@@ -253,8 +257,27 @@ function spawnAsteroid() {
   else if (side === 2) { x = 48 - 30; y = Math.random() * canvas.height; } // Just outside left border
   else { x = canvas.width - 48 + 30; y = Math.random() * canvas.height; } // Just outside right border
 
-  const angle = Math.atan2(centerY - y, centerX - x) + (Math.random() - 0.5) * Math.PI / 2;
-  const speed = 1.5 + Math.random() * 2;
+  const isHoming = Math.random() < 0.8; // 80% chance to be homing
+  let vx, vy;
+  if (isHoming) {
+    // Direction towards rocket's current position at spawn, with increased speed
+    const dx = rocket.x - x;
+    const dy = rocket.y - y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 0) {
+      const speed = 2.5 + Math.random() * 2; // Increased speed
+      vx = (dx / dist) * speed;
+      vy = (dy / dist) * speed;
+    } else {
+      vx = 0;
+      vy = 0;
+    }
+  } else {
+    const angle = Math.atan2(centerY - y, centerX - x) + (Math.random() - 0.5) * Math.PI / 2;
+    const speed = 1.5 + Math.random() * 2;
+    vx = Math.cos(angle) * speed;
+    vy = Math.sin(angle) * speed;
+  }
   
   // Generate fixed shape for this asteroid
   const sides = 6 + Math.floor(Math.random() * 4); // 6-9 sides
@@ -268,34 +291,47 @@ function spawnAsteroid() {
   asteroids.push({
     x, y,
     size: 20 + Math.random() * 25,
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed,
+    vx: vx,
+    vy: vy,
     shape: shape, // Store the fixed shape
     health: Math.floor(Math.random() * 5) + 1, // Random health 1-5
-    color: Math.random() < 0.3 ? "white" : "black" // 30% chance for white asteroids
+    color: Math.random() < 0.3 ? "white" : "black", // 30% chance for white asteroids
+    isHoming,
+    bounceBoost: 1.2,   // how much speed increases per bounce
+    maxSpeed: 6          // hard speed cap
   });
 }
-
+function clampAsteroidSpeed(a) {
+  const speed = Math.sqrt(a.vx * a.vx + a.vy * a.vy);
+  if (speed > a.maxSpeed) {
+    a.vx = (a.vx / speed) * a.maxSpeed;
+    a.vy = (a.vy / speed) * a.maxSpeed;
+  }
+}
 function updateAsteroids() {
   asteroids.forEach(a => {
     a.x += a.vx;
     a.y += a.vy;
     
-    // Keep asteroids within the border (bounce off edges)
+    // Bounce off edges for all asteroids
     if (a.x - a.size < 52) {
       a.x = 52 + a.size;
-      a.vx = Math.abs(a.vx); // Bounce right
+      a.vx = Math.abs(a.vx) * a.bounceBoost; // Bounce right
+      clampAsteroidSpeed(a);
     } else if (a.x + a.size > canvas.width - 52) {
       a.x = canvas.width - 52 - a.size;
-      a.vx = -Math.abs(a.vx); // Bounce left
+      a.vx = -Math.abs(a.vx) * a.bounceBoost; // Bounce left
+      clampAsteroidSpeed(a);
     }
     
     if (a.y - a.size < 52) {
       a.y = 52 + a.size;
-      a.vy = Math.abs(a.vy); // Bounce down
+      a.vy = Math.abs(a.vy) * a.bounceBoost; // Bounce down
+      clampAsteroidSpeed(a);
     } else if (a.y + a.size > canvas.height - 52) {
       a.y = canvas.height - 52 - a.size;
-      a.vy = -Math.abs(a.vy); // Bounce up
+      a.vy = -Math.abs(a.vy) * a.bounceBoost; // Bounce up
+      clampAsteroidSpeed(a);
     }
   });
 }
